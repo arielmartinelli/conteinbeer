@@ -22,6 +22,8 @@
       tag_casa: "da casa",
       tag_artesanal: "artesanal",
       tag_novo: "novo",
+      promoFlag: "Ofertas",
+      before: "antes",
     },
     es: {
       welcome: "Bienvenidos a",
@@ -43,6 +45,8 @@
       tag_casa: "de la casa",
       tag_artesanal: "artesanal",
       tag_novo: "nuevo",
+      promoFlag: "Ofertas",
+      before: "antes",
     },
   };
 
@@ -164,9 +168,9 @@
   function fromLocal() {
     return (window.MENU || []).map(function (c) {
       return {
-        id: c.id, title: c.title, note: c.note || null, subs: [],
+        id: c.id, title: c.title, note: c.note || null, subs: [], highlight: !!c.highlight,
         items: c.items.map(function (it) {
-          return { name: it.name, desc: it.desc || null, price: it.price, tags: it.tags || [], photo: it.photo || null };
+          return { name: it.name, desc: it.desc || null, price: it.price, priceBefore: it.priceBefore || null, tags: it.tags || [], photo: it.photo || null };
         }),
       };
     });
@@ -186,13 +190,14 @@
           name: tr(it.name_pt, it.name_es),
           desc: it.desc_pt || it.desc_es ? tr(it.desc_pt, it.desc_es) : null,
           price: Number(it.price),
+          priceBefore: it.price_before != null ? Number(it.price_before) : null,
           tags: it.tags || [],
           photo: it.photo_path ? sb.storage.from("menu-photos").getPublicUrl(it.photo_path).data.publicUrl : null,
         };
       }
       function itemsOf(id) { return items.filter(function (i) { return i.category_id === id; }).map(mapItem); }
       function mapCat(c) {
-        return { id: "c-" + c.id, title: tr(c.name_pt, c.name_es), note: c.note_pt || c.note_es ? tr(c.note_pt, c.note_es) : null, items: itemsOf(c.id) };
+        return { id: "c-" + c.id, title: tr(c.name_pt, c.name_es), note: c.note_pt || c.note_es ? tr(c.note_pt, c.note_es) : null, items: itemsOf(c.id), highlight: !!c.highlight };
       }
       return cats.filter(function (c) { return !c.parent_id; }).map(function (c) {
         var cat = mapCat(c);
@@ -259,6 +264,43 @@
     return ul;
   }
 
+  // Promociones: tarjetas blancas con cinta de peligro de contenedor, sello de descuento y precio tachado.
+  function renderPromos(list) {
+    var ul = el("ul", "promo-list");
+    list.forEach(function (it, i) {
+      var li = el("li", "promo-card");
+      li.style.setProperty("--i", i);
+      if (it.photo) {
+        var img = el("img", "promo-photo");
+        img.src = it.photo;
+        img.alt = it.name[lang];
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.addEventListener("click", function () { openPhoto(it.photo, it.name[lang]); });
+        li.appendChild(img);
+      }
+      var body = el("div", "promo-body");
+      if (it.priceBefore && it.priceBefore > it.price) {
+        var off = Math.round((1 - it.price / it.priceBefore) * 100);
+        body.appendChild(el("span", "promo-stamp", "-" + off + "%"));
+      }
+      body.appendChild(el("h3", "promo-name", it.name[lang]));
+      if (it.desc) body.appendChild(el("p", "promo-desc", it.desc[lang]));
+      var price = el("div", "promo-price");
+      if (it.priceBefore && it.priceBefore > it.price) {
+        var old = el("span", "promo-old");
+        old.appendChild(el("small", null, t("before") + " "));
+        old.appendChild(el("s", null, fmt(it.priceBefore)));
+        price.appendChild(old);
+      }
+      price.appendChild(el("span", "promo-now", fmt(it.price)));
+      body.appendChild(price);
+      li.appendChild(body);
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
   function renderMenu() {
     var main = document.getElementById("menu");
     var tabs = document.getElementById("tabs");
@@ -271,18 +313,25 @@
     }
 
     menuData.forEach(function (cat, i) {
-      var a = el("a", i === 0 ? "active" : null, cat.title[lang]);
+      var a = el("a", (i === 0 ? "active " : "") + (cat.highlight ? "tab-promo" : ""), cat.title[lang]);
       a.href = "#" + cat.id;
       tabs.appendChild(a);
 
-      var sec = el("section", "cat panel");
+      var sec = el("section", cat.highlight ? "cat promo" : "cat panel");
       sec.id = cat.id;
       var head = el("div", "cat-head");
-      head.appendChild(el("span", "tag", String(i + 1).padStart(2, "0")));
+      if (cat.highlight) {
+        var flag = el("span", "promo-flag");
+        flag.appendChild(el("span", "promo-dot"));
+        flag.appendChild(document.createTextNode(t("promoFlag")));
+        head.appendChild(flag);
+      } else {
+        head.appendChild(el("span", "tag", String(i + 1).padStart(2, "0")));
+      }
       head.appendChild(el("h2", null, cat.title[lang]));
       sec.appendChild(head);
       if (cat.note) sec.appendChild(el("p", "cat-note", cat.note[lang]));
-      if (cat.items.length) sec.appendChild(renderItems(cat.items));
+      if (cat.items.length) sec.appendChild(cat.highlight ? renderPromos(cat.items) : renderItems(cat.items));
       cat.subs.forEach(function (sub) {
         sec.appendChild(el("h3", "sub-title", sub.title[lang]));
         if (sub.note) sec.appendChild(el("p", "cat-note", sub.note[lang]));

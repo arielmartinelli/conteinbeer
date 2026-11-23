@@ -329,6 +329,7 @@ html, body { overflow-x: clip; }
 .cell-main.static { cursor: default; }
 .cell-title { display: flex; align-items: center; gap: 6px; max-width: 100%; font-size: 15px; font-weight: 600; overflow: hidden; white-space: nowrap; }
 .cell-sub { max-width: 100%; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.price-before { display: block; color: var(--dim); font-size: 12px; font-weight: 500; }
 .cell-price { min-width: 92px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .cell-status { min-width: 92px; font-size: 12px; font-weight: 600; }
 .cell-status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; }

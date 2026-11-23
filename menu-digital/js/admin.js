@@ -138,6 +138,7 @@
   function countDeep(id) {
     return itemsOf(id).length + subCats(id).reduce(function (n, s) { return n + itemsOf(s.id).length; }, 0);
   }
+  function hasCol(rows, col) { return rows.length > 0 && Object.prototype.hasOwnProperty.call(rows[0], col); }
   function photoUrl(path) { return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
 
   // ---------- sesión ----------
@@ -553,7 +554,9 @@
         h("span", { class: "cell-sub d-only", text: desc }),
         h("span", { class: "cell-sub m-only", text: money(it.price) + (it.available ? "" : " · No disponible") })),
       h("span", { class: "cell-status d-only" + (it.available ? " ok" : " no"), text: it.available ? "Disponible" : "No disponible" }),
-      h("span", { class: "cell-price d-only", text: money(it.price) }),
+      h("span", { class: "cell-price d-only" },
+        it.price_before && Number(it.price_before) > Number(it.price) ? h("s", { class: "price-before", text: money(it.price_before) }) : null,
+        money(it.price)),
       availSwitch(it),
       canMove ? moveBtns(it, siblings, "items") : null,
       h("button", { class: "icon-btn d-only", type: "button", title: "Editar", "aria-label": "Editar " + name,
@@ -582,6 +585,7 @@
       c.name_pt && c.name_pt !== c.name_es ? "PT: " + c.name_pt : null,
       plural(n, "item", "items"),
       subs.length ? plural(subs.length, "subcategoría", "subcategorías") : null,
+      c.highlight ? "★ Promo destacada" : null,
       c.active ? null : "Oculta",
     ].filter(Boolean).join(" · ");
     return h("div", { class: "cell cat-cell" + (isSub ? " sub" : "") + (c.active ? "" : " off") },
@@ -786,6 +790,9 @@
         : "Elegí una si querés que sea subcategoría (ej: Cervezas › Porrón)."),
       h("label", { class: "check-row" }, h("span", { text: "Visible en el menú" }),
         h("span", { class: "switch" }, h("input", { type: "checkbox", name: "active", checked: c.active }), h("span", { class: "slider" }))),
+      hasCol(cats, "highlight") ? h("label", { class: "check-row" },
+        h("span", { text: "Destacar como promociones (tarjetas blancas con descuento)" }),
+        h("span", { class: "switch" }, h("input", { type: "checkbox", name: "highlight", checked: !!c.highlight }), h("span", { class: "slider" }))) : null,
     ], async function (f) {
       var parent = hasSubs ? null : (f.get("parent_id") || null);
       var siblings = cats.filter(function (x) { return (x.parent_id || null) === parent && x.id !== c.id; });
@@ -797,6 +804,7 @@
         parent_id: parent,
         active: f.get("active") === "on",
       };
+      if (hasCol(cats, "highlight")) row.highlight = f.get("highlight") === "on";
       if (isNew || (c.parent_id || null) !== parent) {
         row.position = siblings.reduce(function (m, x) { return Math.max(m, x.position); }, 0) + 1;
       }
@@ -860,6 +868,8 @@
       h("div", { class: "two" },
         field("Precio (R$) *", h("input", { name: "price", type: "number", min: "0", step: "0.01", inputmode: "decimal", required: true, value: it.price })),
         field("Categoría", catSel)),
+      hasCol(items, "price_before") ? field("Precio anterior (R$)", h("input", { name: "price_before", type: "number", min: "0", step: "0.01", inputmode: "decimal",
+        value: it.price_before != null ? it.price_before : "" }), "Opcional. Para promos: se muestra tachado con el % de descuento.") : null,
       h("fieldset", { class: "tags-field" }, h("legend", { text: "Etiquetas" }),
         TAGS.map(function (t) {
           return h("label", { class: "pill" },
@@ -879,6 +889,10 @@
         tags: f.getAll("tags"),
         available: f.get("available") === "on",
       };
+      if (hasCol(items, "price_before")) {
+        var pb = String(f.get("price_before") || "").trim();
+        row.price_before = pb === "" ? null : Number(pb);
+      }
       if (isNew || catId !== it.category_id) {
         row.position = itemsOf(catId).reduce(function (m, x) { return Math.max(m, x.position); }, 0) + 1;
       }

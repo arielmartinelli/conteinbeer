@@ -3,6 +3,17 @@
 // tags posibles: "artesanal", "casa" (especialidad de la casa), "novo"
 window.MENU = [
   {
+    id: "promos",
+    highlight: true,
+    title: { pt: "Promoções", es: "Promociones" },
+    note: { pt: "Por tempo limitado", es: "Por tiempo limitado" },
+    items: [
+      { name: { pt: "Combo Contêiner", es: "Combo Contêiner" }, desc: { pt: "Hambúrguer Cheddar + batata frita + long neck à escolha", es: "Hamburguesa Cheddar + papas fritas + porrón a elección" }, price: 59, priceBefore: 77 },
+      { name: { pt: "Balde de Jogo", es: "Balde de partido" }, desc: { pt: "5 long necks bem geladas para ver o jogo com os amigos", es: "5 porrones bien fríos para ver el partido con amigos" }, price: 55, priceBefore: 70 },
+      { name: { pt: "Dupla Cordobesa", es: "Dupla cordobesa" }, desc: { pt: "2 hambúrgueres Cordobesa + 2 Fernet com Coca", es: "2 hamburguesas Cordobesas + 2 Fernet con Coca" }, price: 119, priceBefore: 140 },
+    ],
+  },
+  {
     id: "burgers",
     title: { pt: "Hambúrgueres", es: "Hamburguesas" },
     note: { pt: "Pão brioche, blend 160 g e batata frita", es: "Pan brioche, medallón de 160 g y papas fritas" },
