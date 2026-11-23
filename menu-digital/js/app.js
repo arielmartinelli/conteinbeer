@@ -322,14 +322,7 @@
       var sec = el("section", cat.highlight ? "cat promo" : "cat panel");
       sec.id = cat.id;
       var head = el("div", "cat-head");
-      if (cat.highlight) {
-        var flag = el("span", "promo-flag");
-        flag.appendChild(el("span", "promo-dot"));
-        flag.appendChild(document.createTextNode(t("promoFlag")));
-        head.appendChild(flag);
-      } else {
-        head.appendChild(el("span", "tag", String(i + 1).padStart(2, "0")));
-      }
+      if (!cat.highlight) head.appendChild(el("span", "tag", String(i + 1).padStart(2, "0")));
       head.appendChild(el("h2", null, cat.title[lang]));
       sec.appendChild(head);
       if (cat.note) sec.appendChild(el("p", "cat-note", cat.note[lang]));
