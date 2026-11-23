@@ -357,6 +357,8 @@ html, body { overflow-x: clip; }
 
 .profile { min-height: 72px; }
 .avatar { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; background: var(--white); color: #000; font-weight: 700; font-size: 19px; }
+.settings-note { margin: 0; color: var(--muted); font-size: 13px; }
+.settings-note a { color: var(--text); }
 .danger-cell { justify-content: center; color: var(--red); font-weight: 600; font-size: 16px; min-height: 50px; }
 
 .empty { margin-top: 24px; padding: 40px 20px; text-align: center; color: var(--muted); background: var(--cell); border: 1px dashed var(--line); border-radius: var(--r); }
@@ -473,7 +475,7 @@ html, body { overflow-x: clip; }
     bottom: 0;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding: 6px 4px calc(6px + var(--safe-b));
     background: rgba(18, 18, 20, 0.86);
     -webkit-backdrop-filter: saturate(180%) blur(20px);

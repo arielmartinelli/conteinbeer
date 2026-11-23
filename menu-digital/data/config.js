@@ -5,13 +5,10 @@ window.CONFIG = {
   supabaseUrl: "https://psunquiklmecsnqonjkq.supabase.co",
   supabaseAnonKey: "sb_publishable_WsdP0zeoTO_0WrVjMuKm0g_XINRYQvj",
 
-  // Abre el local en Google Maps (ubicación + reseñas).
-  // TODO: cuando tengamos el Place ID, cambiar por el link directo a "escribir reseña":
-  // https://search.google.com/local/writereview?placeid=TU_PLACE_ID
-  reviewUrl:
-    "https://www.google.com/maps/search/?api=1&query=Conteinbeer%2C%20R.%20Ap%C3%B3stolo%20Pascoal%20978%2C%20Canasvieiras%2C%20Florian%C3%B3polis",
+  // Valores de respaldo: los reales se editan en el panel (Configuración) y se guardan en Supabase.
+  // Perfil del local en Google Maps (ubicación + reseñas).
+  reviewUrl: "https://maps.app.goo.gl/tyUWvfxvQgaNS8oh8",
 
-  // TODO: datos reales del Wi-Fi
   wifi: {
     ssid: "Conteinbeer_Clientes",
     password: "cervejagelada",

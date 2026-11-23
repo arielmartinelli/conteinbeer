@@ -8,7 +8,7 @@
     { id: "artesanal", label: "Artesanal" },
     { id: "novo", label: "Nuevo" },
   ];
-  var TITLES = { items: "Platos", categories: "Categorías", account: "Mi cuenta" };
+  var TITLES = { items: "Platos", categories: "Categorías", settings: "Configuración", account: "Mi cuenta" };
 
   var $ = function (s) { return document.querySelector(s); };
 
@@ -117,6 +117,8 @@
   });
   var cats = [];
   var items = [];
+  var settings = {};
+  var settingsMissing = false;
   var me = "";
   var state = { view: "items", filter: "all", q: "", reorder: false, sideOpen: false };
 
@@ -358,6 +360,10 @@
     if (err) return toast("Error al cargar: " + err.message, true);
     cats = res[0].data;
     items = res[1].data;
+    var st = await sb.from("settings").select("key, value");
+    settingsMissing = !!st.error;
+    settings = {};
+    (st.data || []).forEach(function (row) { settings[row.key] = row.value || ""; });
     if (state.filter !== "all" && !catById(state.filter)) state.filter = "all";
     render();
   }
@@ -423,6 +429,7 @@
     body.replaceChildren(
       state.view === "items" ? itemsView()
         : state.view === "categories" ? categoriesView()
+        : state.view === "settings" ? settingsView()
         : accountView());
     if (state.view === "account") addEyes(body);
   }
@@ -430,7 +437,7 @@
   function renderTopActions() {
     var box = $("#top-actions");
     box.replaceChildren();
-    if (state.view === "account") return;
+    if (state.view === "account" || state.view === "settings") return;
     var isItems = state.view === "items";
     box.appendChild(h("button", { class: "btn ghost m-only", type: "button",
       onclick: function () { state.reorder = !state.reorder; render(); } }, state.reorder ? "Listo" : "Ordenar"));
@@ -588,6 +595,65 @@
       h("button", { class: "icon-btn d-only", type: "button", title: "Editar", "aria-label": "Editar " + catName(c),
         onclick: function () { editCat(c); } }, icon(I.edit)),
       h("span", { class: "chev m-only" }, icon(I.chev)));
+  }
+
+  // ---------- vista: configuración (Wi-Fi y reseñas) ----------
+  function settingsView() {
+    if (settingsMissing) {
+      return h("div", { class: "view" }, h("div", { class: "card" },
+        h("p", { class: "settings-note", text: "Falta crear la tabla de ajustes en Supabase. Corré el archivo supabase/settings.sql en el SQL Editor y recargá el panel." })));
+    }
+    var C0 = window.CONFIG || {};
+    var w0 = C0.wifi || {};
+    var err = h("p", { class: "form-error", role: "alert" });
+    var form = h("form", { class: "form" },
+      field("Nombre de la red Wi-Fi", h("input", { name: "wifi_ssid", required: true, autocomplete: "off", spellcheck: "false",
+        value: settings.wifi_ssid != null ? settings.wifi_ssid : (w0.ssid || "") })),
+      field("Clave del Wi-Fi", h("input", { name: "wifi_password", autocomplete: "off", spellcheck: "false",
+        value: settings.wifi_password != null ? settings.wifi_password : (w0.password || "") }),
+        "Se muestra en la página de las mesas. Dejala vacía si la red no tiene clave."),
+      err,
+      h("button", { class: "btn", type: "submit" }, "Guardar Wi-Fi"));
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var f = new FormData(form);
+      await saveSettings({ wifi_ssid: String(f.get("wifi_ssid")).trim(), wifi_password: String(f.get("wifi_password")).trim() }, err, form, "Wi-Fi actualizado");
+    });
+
+    var err2 = h("p", { class: "form-error", role: "alert" });
+    var reviewVal = settings.review_url != null ? settings.review_url : (C0.reviewUrl || "");
+    var testLink = h("a", { href: reviewVal || "#", target: "_blank", rel: "noopener", text: "Probar link ↗" });
+    var form2 = h("form", { class: "form" },
+      field("Link de Google (reseñas y ubicación)", h("input", { name: "review_url", type: "url", required: true, value: reviewVal,
+        placeholder: "https://maps.app.goo.gl/…", oninput: function (e) { testLink.href = e.target.value || "#"; } }),
+        "En Google Maps: buscá el bar → Compartir → Copiar vínculo."),
+      h("p", { class: "settings-note" }, testLink),
+      err2,
+      h("button", { class: "btn", type: "submit" }, "Guardar link"));
+    form2.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var v = String(new FormData(form2).get("review_url")).trim();
+      if (!/^https:\/\//.test(v)) { err2.textContent = "El link tiene que empezar con https://"; return; }
+      await saveSettings({ review_url: v }, err2, form2, "Link guardado");
+    });
+
+    return h("div", { class: "view account" },
+      h("p", { class: "view-hint", text: "Estos datos se ven en la página que abren los clientes con el QR de las mesas." }),
+      h("section", { class: "group" }, h("h2", { class: "group-head" }, h("span", { text: "Wi-Fi para clientes" })), h("div", { class: "card" }, form)),
+      h("section", { class: "group" }, h("h2", { class: "group-head" }, h("span", { text: "Reseñas en Google" })), h("div", { class: "card" }, form2)));
+  }
+
+  async function saveSettings(values, errEl, form, okMsg) {
+    errEl.textContent = "";
+    var btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+    var now = new Date().toISOString();
+    var rows = Object.keys(values).map(function (k) { return { key: k, value: values[k], updated_at: now }; });
+    var r = await sb.from("settings").upsert(rows, { onConflict: "key" });
+    btn.disabled = false;
+    if (r.error) { errEl.textContent = "No se pudo guardar: " + r.error.message; return; }
+    Object.keys(values).forEach(function (k) { settings[k] = values[k]; });
+    toast(okMsg);
   }
 
   // ---------- vista: mi cuenta ----------

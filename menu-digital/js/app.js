@@ -129,6 +129,31 @@
     });
   }
 
+  // Datos editables desde el panel (Configuración): Wi-Fi y link de reseñas.
+  // Si Supabase no responde, quedan los valores de data/config.js.
+  function showWifi() {
+    if (!wifiBox || !C.wifi) return;
+    document.getElementById("wifi-ssid").textContent = C.wifi.ssid;
+    var hasPass = !!C.wifi.password;
+    document.getElementById("wifi-pass").textContent = hasPass ? C.wifi.password : "—";
+    document.getElementById("copy-pass").hidden = !hasPass;
+  }
+  if ((review || wifiBox) && C.supabaseUrl && C.supabaseAnonKey && window.fetch) {
+    fetch(C.supabaseUrl + "/rest/v1/settings?select=key,value", { headers: { apikey: C.supabaseAnonKey } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (rows) {
+        var s = {};
+        rows.forEach(function (row) { s[row.key] = row.value || ""; });
+        if (review && /^https:\/\//.test(s.review_url || "")) review.href = s.review_url;
+        if (C.wifi) {
+          if (s.wifi_ssid) C.wifi.ssid = s.wifi_ssid;
+          if (s.wifi_password != null) C.wifi.password = s.wifi_password;
+          showWifi();
+        }
+      })
+      .catch(function (err) { console.warn("Ajustes: uso los valores locales", err); });
+  }
+
   // ---------- menú ----------
   // Forma normalizada: [{ id, title:{pt,es}, note, items:[...], subs:[{ id, title, note, items }] }]
   var menuData = null;
