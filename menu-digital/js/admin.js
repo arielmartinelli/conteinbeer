@@ -120,7 +120,7 @@
   var settings = {};
   var settingsMissing = false;
   var me = "";
-  var state = { view: "items", filter: "all", q: "", reorder: false, sideOpen: false };
+  var state = { view: "items", filter: "all", q: "", reorder: false, sideOpen: false, open: {}, openCats: {} };
 
   function topCats() { return cats.filter(function (c) { return !c.parent_id; }).sort(byPos); }
   function subCats(id) { return cats.filter(function (c) { return c.parent_id === id; }).sort(byPos); }
@@ -513,21 +513,46 @@
     return wrap;
   }
 
+  function isMobile() { return window.matchMedia("(max-width: 899px)").matches; }
+
+  // Cada categoría principal es una tarjeta: en el celular se despliega al tocarla.
   function renderItemList(list) {
     list.replaceChildren();
     var q = norm(state.q.trim());
-    var groups = catOrder().filter(function (c) {
-      return state.filter === "all" || c.id === state.filter || c.parent_id === state.filter;
-    });
     var shownAny = false;
-    groups.forEach(function (c) {
-      var all = itemsOf(c.id);
-      var shown = q ? all.filter(function (i) { return norm(i.name_es).indexOf(q) >= 0 || norm(i.name_pt).indexOf(q) >= 0; }) : all;
-      if (!shown.length) return;
+    topCats().forEach(function (t) {
+      var subs = subCats(t.id);
+      var inFilter = state.filter === "all" || state.filter === t.id || subs.some(function (s) { return s.id === state.filter; });
+      if (!inFilter) return;
+      var parts = [t].concat(subs).filter(function (c) {
+        return state.filter === "all" || state.filter === t.id || c.id === state.filter;
+      });
+      var body = [];
+      var count = 0;
+      parts.forEach(function (c) {
+        var all = itemsOf(c.id);
+        var shown = q ? all.filter(function (i) { return norm(i.name_es).indexOf(q) >= 0 || norm(i.name_pt).indexOf(q) >= 0; }) : all;
+        if (!shown.length) return;
+        count += shown.length;
+        if (c !== t) body.push(h("h3", { class: "sub-head" }, h("span", { text: catName(c) }), h("span", { class: "group-count", text: plural(all.length, "item", "items") })));
+        body.push(h("div", { class: "cells" }, shown.map(function (it) { return itemRow(it, all, !q); })));
+      });
+      if (!body.length) return;
       shownAny = true;
-      list.appendChild(h("section", { class: "group" },
-        h("h2", { class: "group-head" }, h("span", { text: catLabel(c) }), h("span", { class: "group-count", text: plural(all.length, "item", "items") })),
-        h("div", { class: "cells" }, shown.map(function (it) { return itemRow(it, all, !q); }))));
+      var open = !!q || state.filter !== "all" || !!state.open[t.id];
+      var sec = h("section", { class: "group fold" + (open ? " open" : "") + (t.highlight ? " is-promo" : "") });
+      var toggle = h("button", { class: "fold-head", type: "button", "aria-expanded": String(open),
+        onclick: function () {
+          state.open[t.id] = !sec.classList.contains("open");
+          sec.classList.toggle("open", state.open[t.id]);
+          toggle.setAttribute("aria-expanded", String(state.open[t.id]));
+        } },
+        h("span", { class: "fold-title", text: catName(t) }),
+        h("span", { class: "group-count", text: plural(count, "item", "items") }),
+        h("span", { class: "fold-chev" }, icon(I.chev)));
+      sec.appendChild(toggle);
+      sec.appendChild(h("div", { class: "fold-body" }, body));
+      list.appendChild(sec);
     });
     if (!shownAny) {
       list.appendChild(empty(q ? "No hay platos que coincidan con “" + state.q.trim() + "”."
@@ -573,38 +598,54 @@
   // ---------- vista: categorías ----------
   function categoriesView() {
     var wrap = h("div", { class: "view" });
-    wrap.appendChild(h("p", { class: "view-hint", text: "Cada bloque es una categoría con sus subcategorías. Tocá una para editarla." }));
+    wrap.appendChild(h("p", { class: "view-hint", text: "Tocá una categoría para ver sus subcategorías. Con el lápiz la editás." }));
     var tops = topCats();
     if (!tops.length) wrap.appendChild(empty("Todavía no hay categorías. Tocá “+” para crear la primera."));
     tops.forEach(function (t) {
       var subs = subCats(t.id);
-      wrap.appendChild(h("section", { class: "group" },
-        h("div", { class: "cells" }, catRow(t, tops, false), subs.map(function (s) { return catRow(s, subs, true); }))));
+      var open = !!state.openCats[t.id];
+      var sec = h("section", { class: "group fold cat-fold" + (open ? " open" : "") });
+      function toggle() {
+        state.openCats[t.id] = !sec.classList.contains("open");
+        sec.classList.toggle("open", state.openCats[t.id]);
+      }
+      sec.appendChild(h("div", { class: "cells" },
+        catRow(t, tops, false, toggle),
+        h("div", { class: "fold-body" },
+          subs.map(function (s) { return catRow(s, subs, true); }),
+          h("button", { class: "cell add-sub", type: "button", onclick: function () { editCat(null, t.id); } },
+            h("span", { class: "cat-icon", "aria-hidden": "true" }, icon(I.plus)),
+            h("span", { class: "cell-title", text: "Agregar subcategoría en " + catName(t) })))));
+      wrap.appendChild(sec);
     });
     return wrap;
   }
 
-  function catRow(c, siblings, isSub) {
+  function catRow(c, siblings, isSub, onToggle) {
     var n = isSub ? itemsOf(c.id).length : countDeep(c.id);
     var subs = isSub ? [] : subCats(c.id);
     var meta = [
-      c.name_pt && c.name_pt !== c.name_es ? "PT: " + c.name_pt : null,
       plural(n, "item", "items"),
       subs.length ? plural(subs.length, "subcategoría", "subcategorías") : null,
-      c.highlight ? "★ Promo destacada" : null,
+      c.highlight ? "★ Promo" : null,
       c.active ? null : "Oculta",
     ].filter(Boolean).join(" · ");
-    return h("div", { class: "cell cat-cell" + (isSub ? " sub" : "") + (c.active ? "" : " off") },
+    var main = function () {
+      // Principal en el celular: despliega. En la computadora (o subcategoría): edita.
+      if (!isSub && onToggle && isMobile()) onToggle(); else editCat(c);
+    };
+    return h("div", { class: "cell cat-cell" + (isSub ? " sub" : " top") + (c.active ? "" : " off") },
       h("span", { class: "cat-icon", "aria-hidden": "true", text: isSub ? "↳" : catName(c).slice(0, 1).toUpperCase() }),
-      h("button", { class: "cell-main", type: "button", onclick: function () { editCat(c); } },
+      h("button", { class: "cell-main", type: "button", onclick: main },
         h("span", { class: "cell-title", text: catName(c) }),
         h("span", { class: "cell-sub", text: meta })),
       h("button", { class: "link-btn d-only", type: "button",
         onclick: function () { state.view = "items"; state.filter = c.id; render(); } }, "Ver items"),
       moveBtns(c, siblings, "categories"),
-      h("button", { class: "icon-btn d-only", type: "button", title: "Editar", "aria-label": "Editar " + catName(c),
+      h("button", { class: "icon-btn" + (isSub ? " d-only" : ""), type: "button", title: "Editar", "aria-label": "Editar " + catName(c),
         onclick: function () { editCat(c); } }, icon(I.edit)),
-      h("span", { class: "chev m-only" }, icon(I.chev)));
+      isSub ? h("span", { class: "chev m-only" }, icon(I.chev))
+        : h("button", { class: "icon-btn fold-btn m-only", type: "button", "aria-label": "Ver subcategorías", onclick: function () { if (onToggle) onToggle(); } }, icon(I.chev)));
   }
 
   // ---------- vista: configuración (Wi-Fi y reseñas) ----------
@@ -741,14 +782,26 @@
 
   // ---------- diálogos (hoja en celular, modal en PC) ----------
   var dlg = $("#dlg");
-  dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  // Mientras el formulario está abierto, la página de atrás no se mueve.
+  var lockY = 0;
+  function lockScroll() {
+    lockY = window.scrollY;
+    var b = document.body.style;
+    b.position = "fixed"; b.top = -lockY + "px"; b.left = "0"; b.right = "0"; b.width = "100%";
+  }
+  function unlockScroll() {
+    var b = document.body.style;
+    b.position = ""; b.top = ""; b.left = ""; b.right = ""; b.width = "";
+    window.scrollTo(0, lockY);
+  }
+  dlg.addEventListener("close", unlockScroll);
 
   function field(label, input, hint) {
     return h("label", { class: "fld" }, h("span", { text: label }), input, hint ? h("small", { text: hint }) : null);
   }
 
   function openDialog(title, formChildren, onSubmit, onDelete) {
-    var form = h("form", { class: "form", method: "dialog" },
+    var form = h("form", { class: "form", method: "dialog", tabindex: "-1" },
       h("div", { class: "sheet-head" },
         h("button", { class: "link-btn", type: "button", onclick: function () { dlg.close(); } }, "Cancelar"),
         h("h2", { text: title }),
@@ -766,18 +819,21 @@
       if (ok) { dlg.close(); await load(); }
     });
     dlg.replaceChildren(form);
+    if (!dlg.open) lockScroll();
     dlg.showModal();
-    if (window.matchMedia("(min-width: 900px)").matches) {
+    if (!isMobile()) {
       var first = form.querySelector(".sheet-body input:not([type=file]), .sheet-body textarea");
       if (first) first.focus();
+    } else {
+      form.focus({ preventScroll: true }); // que no quede "Cancelar" marcado
     }
   }
 
   function txt(v) { v = (v || "").trim(); return v || null; }
 
-  function editCat(c) {
+  function editCat(c, parentId) {
     var isNew = !c;
-    c = c || { name_pt: "", name_es: "", note_pt: "", note_es: "", parent_id: null, active: true };
+    c = c || { name_pt: "", name_es: "", note_pt: "", note_es: "", parent_id: parentId || null, active: true };
     var hasSubs = !isNew && subCats(c.id).length > 0;
     var parentSel = h("select", { name: "parent_id", disabled: hasSubs },
       h("option", { value: "" }, "Ninguna (es categoría principal)"),
@@ -786,7 +842,7 @@
       }));
     if (!c.parent_id) parentSel.value = "";
 
-    openDialog(isNew ? "Nueva categoría" : "Editar categoría", [
+    openDialog(isNew ? (c.parent_id ? "Nueva subcategoría" : "Nueva categoría") : "Editar categoría", [
       field("Nombre en español", h("input", { name: "name_es", value: c.name_es || "", placeholder: "Ej: Hamburguesas" })),
       field("Nombre en portugués *", h("input", { name: "name_pt", value: c.name_pt || "", required: true, placeholder: "Ex: Hambúrgueres" })),
       field("Nota en español", h("input", { name: "note_es", value: c.note_es || "", placeholder: "Ej: Todas con papas fritas" }), "Opcional, aparece debajo del título."),

@@ -77,6 +77,7 @@ code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 13p
 .link-btn { border: 0; background: none; padding: 6px 4px; color: var(--muted); font-size: 14px; font-weight: 500; }
 .link-btn:hover { color: var(--text); }
 .link-btn.strong { color: var(--white); font-weight: 700; }
+.link-btn:focus:not(:focus-visible), .dlg .form:focus { outline: none; }
 .icon-btn {
   width: 32px;
   height: 32px;
@@ -362,6 +363,36 @@ html, body { overflow-x: clip; }
 .settings-note a { color: var(--text); }
 .danger-cell { justify-content: center; color: var(--red); font-weight: 600; font-size: 16px; min-height: 50px; }
 
+/* tarjetas desplegables (categorías y platos) */
+.fold-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: default;
+}
+.fold-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fold-chev { display: none; }
+.sub-head { display: flex; justify-content: space-between; gap: 10px; margin: 14px 0 8px; padding: 0 4px 0 18px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.sub-head::before { content: "↳"; margin: 0 6px 0 -16px; color: var(--dim); }
+.sub-head > span:first-child { flex: 1; }
+.add-sub { color: var(--muted); min-height: 52px; cursor: pointer; }
+.add-sub .cell-title { font-weight: 500; font-size: 14px; }
+.add-sub .cat-icon { background: transparent; border: 1px dashed var(--line); }
+.add-sub .cat-icon svg { width: 16px; height: 16px; }
+.cat-fold .fold-body > .cell:first-child::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; height: 1px; background: var(--sep); }
+.fold-btn svg { transition: transform 0.2s ease; transform: rotate(90deg); }
+
 .empty { margin-top: 24px; padding: 40px 20px; text-align: center; color: var(--muted); background: var(--cell); border: 1px dashed var(--line); border-radius: var(--r); }
 .empty p { margin: 0; }
 
@@ -391,7 +422,7 @@ html, body { overflow-x: clip; }
 .sheet-head h2 { margin: 0; font-size: 16px; font-weight: 700; text-align: center; }
 .sheet-head .link-btn:first-child { justify-self: start; }
 .sheet-head .link-btn:last-child { justify-self: end; }
-.sheet-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; overflow-y: auto; }
+.sheet-body { overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; overflow-y: auto; }
 
 @keyframes pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
@@ -428,17 +459,50 @@ html, body { overflow-x: clip; }
   .main { padding: 0 16px calc(96px + var(--safe-b)); }
 
   .appbar {
-    padding: calc(10px + var(--safe-t)) 0 6px;
+    padding: calc(10px + var(--safe-t)) 16px 8px;
     margin: 0 -16px;
-    padding-left: 16px;
-    padding-right: 16px;
-    flex-wrap: wrap;
-    align-items: flex-end;
+    flex-wrap: nowrap;
+    align-items: center;
   }
-  .appbar-titles { order: 2; flex-basis: 100%; }
-  .appbar-actions { order: 1; margin-left: auto; min-height: 36px; align-items: center; }
+  .appbar-titles { flex: 1; min-width: 0; }
+  .appbar-actions { flex: none; align-items: center; }
   .crumb { display: none; }
-  .appbar h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.03em; }
+  .appbar h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* platos: cada categoría es una tarjeta que se despliega */
+  .group.fold { margin-top: 12px; }
+  .fold-head {
+    align-items: center;
+    margin: 0;
+    padding: 0 14px;
+    min-height: 58px;
+    background: var(--cell);
+    border-radius: var(--r);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+  }
+  .fold-head:active { background: var(--cell-hover); }
+  .fold-head .group-count { color: var(--muted); font-size: 14px; font-weight: 500; }
+  .fold-chev { display: grid; place-items: center; color: var(--dim); transition: transform 0.2s ease; }
+  .fold-chev svg { width: 16px; height: 16px; stroke-width: 2.2; }
+  .group.fold.open .fold-chev { transform: rotate(90deg); }
+  .group.fold.open .fold-head { border-radius: var(--r) var(--r) 0 0; }
+  .group.fold:not(.open) .fold-body { display: none; }
+  .group.fold.open .fold-body { background: var(--cell); border-radius: 0 0 var(--r) var(--r); padding-bottom: 4px; }
+  .group.fold.open .fold-body .cells { border-radius: 0; }
+  .fold-body .sub-head { margin: 0; padding: 12px 16px 6px 34px; border-top: 1px solid var(--sep); }
+  .fold-body > .cells:first-child { border-top: 1px solid var(--sep); }
+  .group.is-promo .fold-title::before { content: "★ "; }
+
+  /* categorías: la principal despliega sus subcategorías */
+  .cat-fold:not(.open) .fold-body { display: none; }
+  .cat-fold .fold-body { background: none; padding: 0; }
+  .cat-fold.open .fold-btn svg { transform: rotate(270deg); }
+  .cat-cell.top .icon-btn { color: var(--muted); }
 
   .btn-add { width: 36px; padding: 0; border-radius: 50%; }
   .btn-add .lbl { display: none; }
