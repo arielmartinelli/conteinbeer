@@ -645,6 +645,23 @@ html, body { overflow-x: clip; }
 @keyframes label-out { to { opacity: 0; transform: scale(1.1); } }
 @keyframes drop-out { 0%, 30% { background: rgba(0, 0, 0, 1); } 100% { background: rgba(0, 0, 0, 0); } }
 
+/* en computadora el contenedor es más grande */
+@media (min-width: 900px) {
+  .drop-box { width: min(680px, 70vw); height: 280px; }
+  .door { border-width: 5px; }
+  .door.left { border-right-width: 2.5px; }
+  .door.right { border-left-width: 2.5px; }
+  .door .bar { top: 18px; bottom: 18px; width: 9px; border-radius: 5px; }
+  .door.left .bar:nth-child(1) { right: 26px; }
+  .door.left .bar:nth-child(2) { right: 62px; }
+  .door.right .bar:nth-child(1) { left: 26px; }
+  .door.right .bar:nth-child(2) { left: 62px; }
+  .drop-label::before { height: 140px; border-width: 3px; border-radius: 6px; }
+  .drop-name { font-size: 82px; }
+  .drop-code { font-size: 15px; letter-spacing: 0.16em; }
+  .drop-shadow { top: calc(50% + 150px); width: min(760px, 80vw); height: 40px; }
+}
+
 /* ojito de contraseña */
 .pw-wrap { position: relative; display: block; }
 .pw-wrap input { padding-right: 46px !important; }
