@@ -540,84 +540,121 @@ code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 13p
   100% { transform: none; }
 }
 
-/* entrada correcta: cae un contenedor (~0,95 s) */
+/* entrada correcta: cae un contenedor, rebota y abre las puertas */
 .drop-overlay {
   position: fixed;
   inset: 0;
   z-index: 300;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.9);
+  background: #000;
   pointer-events: none;
 }
+.drop-stage { position: relative; display: grid; place-items: center; }
 .drop-box {
   position: relative;
-  z-index: 1;
-  width: min(340px, 78vw);
-  height: 132px;
+  width: min(360px, 80vw);
+  height: 150px;
+  display: flex;
+  transform: translateY(-120vh);
+  transform-origin: 50% 100%;
+}
+.door {
+  position: relative;
+  flex: 1;
+  border: 3px solid #5c5c5e;
+  background:
+    repeating-linear-gradient(90deg, #3f3f41 0 6px, #2a2a2c 6px 9px, #48484a 9px 14px, #262628 14px 17px),
+    #333;
+  box-shadow: inset 0 12px 18px rgba(255, 255, 255, 0.07), inset 0 -10px 18px rgba(0, 0, 0, 0.35);
+}
+.door.left { border-right-width: 1.5px; border-radius: 4px 0 0 4px; transform-origin: 0 50%; }
+.door.right { border-left-width: 1.5px; border-radius: 0 4px 4px 0; transform-origin: 100% 50%; }
+.door .bar { position: absolute; top: 10px; bottom: 10px; width: 5px; border-radius: 3px; background: #6e6e70; box-shadow: 0 0 0 1px #222; }
+.door.left .bar:nth-child(1) { right: 14px; }
+.door.left .bar:nth-child(2) { right: 34px; }
+.door.right .bar:nth-child(1) { left: 14px; }
+.door.right .bar:nth-child(2) { left: 34px; }
+.drop-label {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border: 3px solid #5a5a5a;
-  border-radius: 4px;
-  background:
-    repeating-linear-gradient(90deg, #3d3d3f 0 6px, #2b2b2d 6px 9px, #444446 9px 14px, #262628 14px 17px),
-    #333;
-  box-shadow: inset 0 0 0 4px #2a2a2a, inset 0 10px 18px rgba(255, 255, 255, 0.08), 0 30px 60px rgba(0, 0, 0, 0.6);
-  transform-origin: 50% 100%;
+  pointer-events: none;
 }
-.drop-box::before, .drop-box::after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 12px;
-  background:
-    linear-gradient(#6b6b6b, #6b6b6b) top / 100% 12px no-repeat,
-    linear-gradient(#6b6b6b, #6b6b6b) bottom / 100% 12px no-repeat;
-}
-.drop-box::before { left: -3px; }
-.drop-box::after { right: -3px; }
-.drop-name { font-family: "Anton", Impact, "Arial Narrow", sans-serif; font-size: 40px; letter-spacing: 0.04em; color: #f2f2f2; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); line-height: 1; }
-.drop-code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 11px; letter-spacing: 0.12em; color: #a0a0a0; }
+.drop-label > * { position: relative; }
+.drop-label::before { content: ""; position: absolute; left: 50%; top: 50%; width: 76%; height: 76px; transform: translate(-50%, -50%); background: #1d1d1f; border: 2px solid #4a4a4c; border-radius: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+.drop-name { font-family: "Anton", Impact, "Arial Narrow", sans-serif; font-size: 42px; letter-spacing: 0.04em; color: #f4f4f4; line-height: 1; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6); }
+.drop-code { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 11px; letter-spacing: 0.12em; color: #b0b0b0; }
 .drop-shadow {
   position: absolute;
-  top: calc(50% + 70px);
+  top: calc(50% + 82px);
   left: 50%;
-  width: min(380px, 86vw);
-  height: 26px;
-  margin-left: calc(min(380px, 86vw) / -2);
+  width: min(400px, 88vw);
+  height: 28px;
+  transform: translateX(-50%) scaleX(0.2);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.9), transparent);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.12), transparent);
   opacity: 0;
 }
-.drop-overlay.play { animation: drop-fade 0.95s ease forwards; }
-.drop-overlay.play .drop-box { animation: drop-fall 0.95s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
-.drop-overlay.play .drop-shadow { animation: drop-shade 0.95s ease forwards; }
+
+/* 1) cae y rebota (0,62 s) */
+.drop-overlay.fall .drop-box { animation: drop-fall 0.62s forwards; }
+.drop-overlay.fall .drop-shadow { animation: drop-shade 0.62s forwards; }
+.drop-overlay.fall .drop-stage { animation: drop-impact 0.62s forwards; }
 @keyframes drop-fall {
-  0% { transform: translateY(-110vh) rotate(-5deg); }
-  42% { transform: translateY(0) rotate(0); animation-timing-function: ease-out; }
-  50% { transform: translateY(6px) scale(1.06, 0.9); }
-  60% { transform: translateY(-4px) scale(0.98, 1.03); }
-  68% { transform: none; }
-  82% { transform: none; opacity: 1; }
-  100% { transform: scale(1.08); opacity: 0; }
+  0% { transform: translateY(-120vh) rotate(-6deg); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  58% { transform: translateY(0) rotate(0); animation-timing-function: ease-out; }
+  70% { transform: translateY(5px) scale(1.06, 0.88); }
+  84% { transform: translateY(-6px) scale(0.98, 1.03); }
+  100% { transform: none; }
 }
 @keyframes drop-shade {
-  0% { opacity: 0; transform: scaleX(0.2); }
-  42% { opacity: 1; transform: scaleX(1); }
-  80% { opacity: 1; }
-  100% { opacity: 0; }
+  0% { opacity: 0; transform: translateX(-50%) scaleX(0.2); }
+  58%, 100% { opacity: 1; transform: translateX(-50%) scaleX(1); }
 }
-@keyframes drop-fade {
-  0%, 44% { opacity: 1; transform: none; }
-  48% { transform: translateY(4px); }
-  54% { transform: translateY(-2px); }
-  60%, 78% { opacity: 1; transform: none; }
-  100% { opacity: 0; }
+@keyframes drop-impact {
+  0%, 57% { transform: none; }
+  62% { transform: translate(2px, 5px); }
+  70% { transform: translate(-2px, -2px); }
+  80%, 100% { transform: none; }
 }
+/* mientras carga el panel: queda quieto */
+/* 2) se abren las puertas y se ve el panel (0,48 s) */
+.drop-overlay.open { animation: drop-out 0.48s ease forwards; }
+.drop-overlay.open .drop-box { transform: none; animation: none; }
+.drop-overlay.open .door.left { animation: door-left 0.48s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+.drop-overlay.open .door.right { animation: door-right 0.48s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+.drop-overlay.open .drop-label { animation: label-out 0.2s ease forwards; }
+.drop-overlay.open .drop-shadow { opacity: 0; transition: opacity 0.2s; }
+@keyframes door-left { to { transform: perspective(700px) rotateY(80deg) translateX(-30px); opacity: 0; } }
+@keyframes door-right { to { transform: perspective(700px) rotateY(-80deg) translateX(30px); opacity: 0; } }
+@keyframes label-out { to { opacity: 0; transform: scale(1.1); } }
+@keyframes drop-out { 0%, 30% { background: rgba(0, 0, 0, 1); } 100% { background: rgba(0, 0, 0, 0); } }
+
+/* ojito de contraseña */
+.pw-wrap { position: relative; display: block; }
+.pw-wrap input { padding-right: 46px !important; }
+.eye {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 38px;
+  height: 38px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+.eye:hover { color: var(--text); }
+.eye svg { width: 20px; height: 20px; }
+.pw-wrap input::-ms-reveal { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

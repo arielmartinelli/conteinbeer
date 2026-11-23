@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=6">
+  <link rel="stylesheet" href="css/admin.css?v=8">
 </head>
 <body class="admin-body">
 
@@ -80,8 +80,14 @@
 
   <!-- Animación de entrada: cae un contenedor -->
   <div class="drop-overlay" id="drop" aria-hidden="true" hidden>
-    <div class="drop-box"><span class="drop-code">CBRU 978·001</span><span class="drop-name">CONTEINBEER</span></div>
-    <div class="drop-shadow"></div>
+    <div class="drop-stage">
+      <div class="drop-box">
+        <div class="door left"><span class="bar"></span><span class="bar"></span></div>
+        <div class="door right"><span class="bar"></span><span class="bar"></span></div>
+        <div class="drop-label"><span class="drop-code">CBRU 978·001 · 22G1</span><span class="drop-name">CONTEINBEER</span></div>
+      </div>
+      <div class="drop-shadow"></div>
+    </div>
   </div>
 
   <!-- Panel -->
@@ -158,6 +164,6 @@
 
   <script src="data/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="js/admin.js?v=4"></script>
+  <script src="js/admin.js?v=5"></script>
 </body>
 </html>

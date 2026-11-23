@@ -102,7 +102,11 @@
   };
   var isRecovery = /type=recovery/.test(location.hash);
   var sb = window.supabase.createClient(C.supabaseUrl, C.supabaseAnonKey, {
-    auth: { storage: authStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    auth: {
+      storage: authStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+      // Sin bloqueo entre pestañas: evita que la sesión quede colgada después de entrar.
+      lock: function (name, acquireTimeout, fn) { return fn(); },
+    },
   });
   var cats = [];
   var items = [];
@@ -136,21 +140,36 @@
     try { $("#remember").checked = remembering(); } catch (e) { /* nada */ }
   }
 
-  // Devuelve true si entró al panel.
-  async function enter() {
-    var u = await sb.auth.getUser();
-    var user = u.data && u.data.user;
-    if (!user) { showLogin(); return false; }
-    var r = await sb.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
-    if (r.error || !r.data) {
-      await sb.auth.signOut();
-      showLogin("Este usuario no tiene permiso para editar el menú.");
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // Devuelve true si entró al panel. Recibe el usuario si ya lo tenemos (recién logueado).
+  async function enter(user) {
+    try {
+      if (!user) {
+        var s = await sb.auth.getSession();
+        user = s.data && s.data.session && s.data.session.user;
+      }
+      if (!user) { showLogin(); return false; }
+      var r = await sb.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
+      if (r.error) throw r.error;
+      if (!r.data) {
+        await sb.auth.signOut();
+        showLogin("Este usuario no tiene permiso para editar el menú.");
+        return false;
+      }
+      me = user.email;
+      show("app");
+      await load();
+      return true;
+    } catch (err) {
+      console.error("No se pudo entrar al panel", err);
+      showLogin("No se pudo entrar: " + (err && err.message ? err.message : "error de conexión") + ". Probá de nuevo.");
       return false;
     }
-    me = user.email;
-    show("app");
-    await load();
-    return true;
+  }
+
+  function withTimeout(promise, ms) {
+    return Promise.race([promise, sleep(ms).then(function () { return "timeout"; })]);
   }
 
   // Contraseña incorrecta: la tarjeta "golpea" como un contenedor que choca.
@@ -158,20 +177,34 @@
     card.classList.remove("shake");
     void card.offsetWidth; // reinicia la animación
     card.classList.add("shake");
-    if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+    if (navigator.vibrate) { try { navigator.vibrate([30, 40, 30]); } catch (e) { /* nada */ } }
   }
 
-  // Entrada correcta: cae un contenedor y se abre el panel (menos de 1 segundo).
-  function playDrop() {
-    if (reduceMotion) return Promise.resolve();
+  // Entrada correcta: cae un contenedor, espera a que el panel esté listo
+  // y abre sus puertas para mostrarlo.
+  async function loginFlow(user) {
     var o = $("#drop");
+    if (reduceMotion) {
+      var res0 = await withTimeout(enter(user), 15000);
+      if (res0 === "timeout") showLogin("Tardó demasiado en responder. Revisá la conexión y probá de nuevo.");
+      return res0 === true;
+    }
     o.hidden = false;
-    o.classList.remove("play");
+    o.className = "drop-overlay";
     void o.offsetWidth;
-    o.classList.add("play");
-    return new Promise(function (resolve) {
-      setTimeout(function () { o.classList.remove("play"); o.hidden = true; resolve(); }, 950);
-    });
+    o.classList.add("fall");
+    var minShow = sleep(700);                 // lo que tarda en caer y asentarse
+    var res = await withTimeout(enter(user), 15000);
+    await minShow;
+    if (res === true) {
+      o.classList.add("open");               // se abren las puertas y aparece el panel
+      await sleep(480);
+    } else if (res === "timeout") {
+      showLogin("Tardó demasiado en responder. Revisá la conexión y probá de nuevo.");
+    }
+    o.hidden = true;
+    o.className = "drop-overlay";
+    return res === true;
   }
 
   $("#login-form").addEventListener("submit", async function (e) {
@@ -193,10 +226,9 @@
       shakeCard(form.closest(".auth-card"));
       return;
     }
-    var anim = playDrop();
-    var ok = await enter();
+    await loginFlow(r.data && r.data.user);
     btn.disabled = false;
-    if (ok) await anim;
+    form.password.value = "";
   });
 
   // Olvidé mi contraseña
@@ -250,11 +282,11 @@
     isRecovery = false;
     history.replaceState(null, "", location.pathname);
     toast("Contraseña actualizada");
-    var anim = playDrop();
-    if (await enter()) await anim;
+    await loginFlow();
   });
   sb.auth.onAuthStateChange(function (event) {
-    if (event === "PASSWORD_RECOVERY") { isRecovery = true; showRecovery(); }
+    // No llamar a Supabase dentro de este callback (puede trabarse): se difiere.
+    if (event === "PASSWORD_RECOVERY") { isRecovery = true; setTimeout(showRecovery, 0); }
   });
 
   async function logout() {
@@ -345,6 +377,7 @@
       state.view === "items" ? itemsView()
         : state.view === "categories" ? categoriesView()
         : accountView());
+    if (state.view === "account") addEyes(body);
   }
 
   function renderTopActions() {
@@ -795,6 +828,35 @@
       img.src = url;
     });
   }
+
+  // ---------- ojito: mostrar / ocultar contraseña ----------
+  var EYE = "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z|M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z";
+  var EYE_OFF = EYE + "|M3 3l18 18";
+  function addEyes(root) {
+    (root || document).querySelectorAll('input[type="password"]').forEach(function (inp) {
+      if (inp.parentNode.classList.contains("pw-wrap")) return;
+      var wrap = h("span", { class: "pw-wrap" });
+      inp.parentNode.insertBefore(wrap, inp);
+      wrap.appendChild(inp);
+      var btn = h("button", { class: "eye", type: "button", "aria-label": "Mostrar contraseña", "aria-pressed": "false" }, icon(EYE));
+      btn.addEventListener("click", function () {
+        var showIt = inp.type === "password";
+        inp.type = showIt ? "text" : "password";
+        btn.setAttribute("aria-pressed", String(showIt));
+        btn.setAttribute("aria-label", showIt ? "Ocultar contraseña" : "Mostrar contraseña");
+        btn.replaceChildren(icon(showIt ? EYE_OFF : EYE));
+        inp.focus();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+  addEyes(document);
+  // Al enviar un formulario, vuelve a ocultarla (así el navegador ofrece guardarla bien).
+  document.addEventListener("submit", function (e) {
+    e.target.querySelectorAll(".pw-wrap input").forEach(function (inp) {
+      if (inp.type === "text") inp.closest(".pw-wrap").querySelector(".eye").click();
+    });
+  }, true);
 
   // ---------- arranque ----------
   sb.auth.getSession().then(function (r) {
