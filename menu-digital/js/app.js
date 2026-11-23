@@ -192,7 +192,9 @@
           price: Number(it.price),
           priceBefore: it.price_before != null ? Number(it.price_before) : null,
           tags: it.tags || [],
-          photo: it.photo_path ? sb.storage.from("menu-photos").getPublicUrl(it.photo_path).data.publicUrl : null,
+          photo: !it.photo_path ? null
+            : /^https?:\/\//.test(it.photo_path) ? it.photo_path
+            : sb.storage.from("menu-photos").getPublicUrl(it.photo_path).data.publicUrl,
         };
       }
       function itemsOf(id) { return items.filter(function (i) { return i.category_id === id; }).map(mapItem); }

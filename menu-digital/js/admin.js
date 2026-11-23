@@ -139,7 +139,13 @@
     return itemsOf(id).length + subCats(id).reduce(function (n, s) { return n + itemsOf(s.id).length; }, 0);
   }
   function hasCol(rows, col) { return rows.length > 0 && Object.prototype.hasOwnProperty.call(rows[0], col); }
-  function photoUrl(path) { return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+  function isLink(path) { return /^https?:\/\//.test(path || ""); }
+  function photoUrl(path) { return isLink(path) ? path : sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
+  // Borra fotos del almacenamiento, salvo las que son links externos (fotos de muestra).
+  function removePhotos(paths) {
+    var own = paths.filter(function (p) { return p && !isLink(p); });
+    return own.length ? sb.storage.from(BUCKET).remove(own) : Promise.resolve();
+  }
 
   // ---------- sesión ----------
   var lastSession = null;
@@ -822,7 +828,7 @@
         .map(function (i) { return i.photo_path; });
       var r = await run(sb.from("categories").delete().eq("id", c.id), "Categoría eliminada");
       if (r) {
-        if (paths.length) await sb.storage.from(BUCKET).remove(paths);
+        if (paths.length) await removePhotos(paths);
         dlg.close();
         await load();
       }
@@ -914,10 +920,10 @@
         if (up.error) { toast("No se pudo subir la foto: " + up.error.message, true); return false; }
         var r2 = await run(sb.from("items").update({ photo_path: path }).eq("id", saved.id));
         if (!r2) return false;
-        if (oldPath) await sb.storage.from(BUCKET).remove([oldPath]);
+        if (oldPath) await removePhotos([oldPath]);
       } else if (removePhoto && oldPath) {
         await run(sb.from("items").update({ photo_path: null }).eq("id", saved.id));
-        await sb.storage.from(BUCKET).remove([oldPath]);
+        await removePhotos([oldPath]);
       }
       toast(isNew ? "Plato creado" : "Plato guardado");
       return true;
@@ -925,7 +931,7 @@
       if (!confirm("¿Eliminar “" + (it.name_es || it.name_pt) + "”? No se puede deshacer.")) return;
       var r = await run(sb.from("items").delete().eq("id", it.id), "Plato eliminado");
       if (r) {
-        if (it.photo_path) await sb.storage.from(BUCKET).remove([it.photo_path]);
+        if (it.photo_path) await removePhotos([it.photo_path]);
         dlg.close();
         await load();
       }
