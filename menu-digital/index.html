@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Conteinbeer · Bem-vindo</title>
+  <meta name="description" content="Conteinbeer, Canasvieiras: cardápio, avaliações e Wi-Fi.">
+  <link rel="icon" href="img/logo.png?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=3">
+</head>
+<body class="page-home">
+  <header class="topbar">
+    <span class="code">CBRU 978·001 · 22G1</span>
+    <div class="lang" role="group" aria-label="Idioma">
+      <button type="button" data-lang="pt">PT</button>
+      <button type="button" data-lang="es">ES</button>
+    </div>
+  </header>
+
+  <main class="home">
+    <section class="hero">
+      <img class="logo" src="img/logo.png?v=2" alt="Conteinbeer" width="176" height="144">
+      <p class="eyebrow" data-i18n="welcome">Bem-vindo ao</p>
+      <h1>Conteinbeer</h1>
+      <p class="tagline" data-i18n="tagline">Hambúrguer artesanal, cerveja gelada e boa vibe.</p>
+    </section>
+
+    <nav class="links">
+      <a class="panel link" href="menu.html">
+        <span class="tag">01</span>
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 10h16M5 10a7 5 0 0 1 14 0M4 14h16M5 14v1a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-1"/></svg>
+        </span>
+        <span class="text">
+          <strong data-i18n="menu">Ver cardápio</strong>
+          <small data-i18n="menuSub">Burgers, cervejas e drinks</small>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="panel link" id="review-link" href="#" target="_blank" rel="noopener">
+        <span class="tag">02</span>
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>
+        </span>
+        <span class="text">
+          <strong data-i18n="review">Avalie a gente no Google</strong>
+          <small data-i18n="reviewSub">Sua opinião ajuda muito · Como chegar</small>
+        </span>
+        <span class="arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <div class="panel wifi" id="wifi">
+        <button class="link wifi-toggle" type="button" aria-expanded="false" aria-controls="wifi-body">
+          <span class="tag">03</span>
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2"/></svg>
+          </span>
+          <span class="text">
+            <strong data-i18n="wifi">Wi-Fi grátis</strong>
+            <small data-i18n="wifiSub">Toque para ver a senha</small>
+          </span>
+          <span class="arrow chevron" aria-hidden="true">+</span>
+        </button>
+        <div class="wifi-body" id="wifi-body" hidden>
+          <div class="field">
+            <span class="label" data-i18n="network">Rede</span>
+            <span class="value" id="wifi-ssid"></span>
+          </div>
+          <div class="field">
+            <span class="label" data-i18n="password">Senha</span>
+            <span class="value" id="wifi-pass"></span>
+            <button class="copy" type="button" id="copy-pass" data-i18n="copy">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </main>
+
+  <footer class="footer">
+    <p data-i18n="hours">Ter a Dom · 18h às 00h</p>
+    <p id="address"></p>
+    <a id="ig-link" href="#" target="_blank" rel="noopener">@conteinbeer</a>
+  </footer>
+
+  <script src="data/config.js"></script>
+  <script src="js/app.js?v=3"></script>
+</body>
+</html>

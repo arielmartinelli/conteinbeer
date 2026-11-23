@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Conteinbeer · Panel</title>
+  <link rel="icon" href="img/logo.png?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/admin.css?v=2">
+</head>
+<body class="page-admin">
+  <header class="topbar admin-top">
+    <img class="mini-logo" src="img/logo.png?v=2" alt="Conteinbeer" width="44" height="36">
+    <span class="admin-title">Panel del menú</span>
+    <div class="admin-actions" id="session-actions" hidden>
+      <a class="btn ghost" href="menu.html" target="_blank" rel="noopener">Ver menú ↗</a>
+      <button class="btn ghost" type="button" id="account">Mi cuenta</button>
+      <button class="btn ghost" type="button" id="logout">Salir</button>
+    </div>
+  </header>
+
+  <!-- Falta configurar -->
+  <section class="admin-card panel" id="view-setup" hidden>
+    <h1>Falta conectar Supabase</h1>
+    <p>Completá <code>supabaseUrl</code> y <code>supabaseAnonKey</code> en <code>data/config.js</code>.</p>
+  </section>
+
+  <!-- Login -->
+  <section class="admin-card panel" id="view-login" hidden>
+    <h1>Ingresar</h1>
+    <form id="login-form" class="form">
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Contraseña <input type="password" name="password" autocomplete="current-password" required></label>
+      <p class="form-error" id="login-error" role="alert"></p>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <!-- Panel -->
+  <main class="admin" id="view-app" hidden>
+    <section class="admin-col">
+      <div class="panel-head">
+        <h2>Categorías</h2>
+        <button class="btn" type="button" id="add-cat">+ Categoría</button>
+      </div>
+      <p class="hint">Tocá una categoría para ver y editar sus platos. Las subcategorías aparecen con sangría.</p>
+      <div id="cat-list" class="list"></div>
+    </section>
+    <section class="admin-col" id="items"></section>
+  </main>
+
+  <dialog id="dlg" class="dlg"></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="js/admin.js?v=2"></script>
+</body>
+</html>
