@@ -85,18 +85,25 @@
   var REM = "cb-remember";
   function remembering() { try { return localStorage.getItem(REM) !== "0"; } catch (e) { return true; } }
   function setRemember(on) { try { localStorage.setItem(REM, on ? "1" : "0"); } catch (e) { /* sin storage */ } }
+  // La sesión se guarda en memoria (siempre funciona mientras la página está abierta)
+  // y además en el navegador para recordarla. Si el navegador no deja guardar, se anota el motivo.
+  var memStore = {};
+  var storageErr = null;
   var authStorage = {
     getItem: function (k) {
+      if (Object.prototype.hasOwnProperty.call(memStore, k)) return memStore[k];
       try { var v = localStorage.getItem(k); return v != null ? v : sessionStorage.getItem(k); } catch (e) { return null; }
     },
     setItem: function (k, v) {
+      memStore[k] = v;
       try {
         var keep = remembering();
         (keep ? localStorage : sessionStorage).setItem(k, v);
         (keep ? sessionStorage : localStorage).removeItem(k);
-      } catch (e) { /* sin storage */ }
+      } catch (e) { storageErr = e.name + ": " + e.message; console.warn("No se pudo guardar la sesión", e); }
     },
     removeItem: function (k) {
+      delete memStore[k];
       try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) { /* sin storage */ }
     },
   };
@@ -111,7 +118,7 @@
   var cats = [];
   var items = [];
   var me = "";
-  var state = { view: "items", filter: "all", q: "", reorder: false };
+  var state = { view: "items", filter: "all", q: "", reorder: false, sideOpen: false };
 
   function topCats() { return cats.filter(function (c) { return !c.parent_id; }).sort(byPos); }
   function subCats(id) { return cats.filter(function (c) { return c.parent_id === id; }).sort(byPos); }
@@ -132,6 +139,7 @@
   function photoUrl(path) { return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl; }
 
   // ---------- sesión ----------
+  var lastSession = null;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function showLogin(msg) {
@@ -150,10 +158,40 @@
         user = s.data && s.data.session && s.data.session.user;
       }
       if (!user) { showLogin(); return false; }
-      var r = await sb.from("admins").select("user_id").eq("user_id", user.id).maybeSingle();
+      // Pregunta a la base si este usuario es administrador (función is_admin).
+      var r = await sb.rpc("is_admin");
       if (r.error) throw r.error;
-      if (!r.data) {
+      if (r.data !== true) {
+        var ref = (C.supabaseUrl.match(/https:\/\/([^.]+)\./) || [])[1] || "";
+        // Diagnóstico: ¿hay sesión guardada? ¿qué responde la base si le mando el token directo?
+        var diag = "";
+        try {
+          var ss = await sb.auth.getSession();
+          var tok = ss.data && ss.data.session && ss.data.session.access_token;
+          var direct = "sin token";
+          if (tok) {
+            var resp = await fetch(C.supabaseUrl + "/rest/v1/rpc/is_admin", {
+              method: "POST",
+              headers: { apikey: C.supabaseAnonKey, Authorization: "Bearer " + tok, "Content-Type": "application/json" },
+              body: "{}",
+            });
+            direct = resp.status + " " + (await resp.text()).slice(0, 80);
+          }
+          var keys = [];
+          try {
+            Object.keys(localStorage).forEach(function (k) { if (k.indexOf("sb-") === 0) keys.push("L:" + k.slice(-10) + "(" + localStorage.getItem(k).length + ")"); });
+            Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf("sb-") === 0) keys.push("S:" + k.slice(-10) + "(" + sessionStorage.getItem(k).length + ")"); });
+          } catch (e2) { keys.push("storage bloqueado"); }
+          diag = " · sesión: " + (tok ? "sí" : "no") + " · directo: " + direct +
+            " · err: " + (ss.error ? ss.error.message : "-") +
+            " · guardado: " + (keys.join(",") || "nada") +
+            " · recordar: " + (remembering() ? "sí" : "no") +
+            " · storageErr: " + (storageErr || "-") +
+            " · mem: " + Object.keys(memStore).length +
+            " · vence en: " + (lastSession && lastSession.expires_at ? Math.round(lastSession.expires_at - Date.now() / 1000) + "s" : "?");
+        } catch (e) { diag = " · diag: " + e.message; }
         await sb.auth.signOut();
+        console.warn("Sin permiso de admin — usuario " + user.id.slice(0, 8) + " · proyecto " + ref + diag);
         showLogin("Este usuario no tiene permiso para editar el menú.");
         return false;
       }
@@ -177,6 +215,7 @@
     card.classList.remove("shake");
     void card.offsetWidth; // reinicia la animación
     card.classList.add("shake");
+    setTimeout(function () { card.classList.remove("shake"); }, 1600);
     if (navigator.vibrate) { try { navigator.vibrate([30, 40, 30]); } catch (e) { /* nada */ } }
   }
 
@@ -226,6 +265,7 @@
       shakeCard(form.closest(".auth-card"));
       return;
     }
+    lastSession = r.data && r.data.session;
     await loginFlow(r.data && r.data.user);
     btn.disabled = false;
     form.password.value = "";
@@ -297,7 +337,11 @@
 
   document.querySelectorAll("[data-view]").forEach(function (b) {
     b.addEventListener("click", function () {
-      state.view = b.getAttribute("data-view");
+      var next = b.getAttribute("data-view");
+      // "Platos" del panel lateral despliega / pliega las categorías
+      if (b.id === "nav-items") state.sideOpen = state.view === "items" ? !state.sideOpen : true;
+      if (next === "items" && b.id === "nav-items" && state.view === "items" && !state.sideOpen) state.filter = "all";
+      state.view = next;
       state.reorder = false;
       render();
       window.scrollTo(0, 0);
@@ -364,7 +408,10 @@
     document.body.classList.toggle("reorder", state.reorder);
     $("#count-items").textContent = items.length;
     $("#count-cats").textContent = cats.length;
-    $("#me-email").textContent = me;
+    var navItems = $("#nav-items");
+    navItems.classList.toggle("open", state.sideOpen);
+    navItems.setAttribute("aria-expanded", String(state.sideOpen));
+    $("#side-cats").hidden = !state.sideOpen;
     renderSideCats();
 
     var filtered = state.view === "items" && state.filter !== "all" && catById(state.filter);
@@ -425,8 +472,8 @@
         h("span", { class: "stat-hint", text: hint }));
     }
     wrap.appendChild(h("div", { class: "stats d-only" },
-      stat("Platos", items.length, "en el menú"),
-      stat("Sin stock", noStock, noStock ? "ocultos del menú" : "todo disponible", noStock ? "warn" : ""),
+      stat("Items", items.length, "en el menú"),
+      stat("No disponibles", noStock, noStock ? "ocultos del menú" : "todo disponible", noStock ? "warn" : ""),
       stat("Sin foto", noPhoto, noPhoto ? "conviene agregarles" : "todos con foto"),
       stat("Categorías", topCats().length, plural(cats.length - topCats().length, "subcategoría", "subcategorías"))));
 
@@ -465,7 +512,7 @@
       if (!shown.length) return;
       shownAny = true;
       list.appendChild(h("section", { class: "group" },
-        h("h2", { class: "group-head" }, h("span", { text: catLabel(c) }), h("span", { class: "group-count", text: plural(all.length, "plato", "platos") })),
+        h("h2", { class: "group-head" }, h("span", { text: catLabel(c) }), h("span", { class: "group-count", text: plural(all.length, "item", "items") })),
         h("div", { class: "cells" }, shown.map(function (it) { return itemRow(it, all, !q); }))));
     });
     if (!shownAny) {
@@ -476,11 +523,11 @@
   }
 
   function availSwitch(it) {
-    return h("label", { class: "switch", title: it.available ? "Disponible" : "Sin stock" },
+    return h("label", { class: "switch", title: it.available ? "Disponible" : "No disponible" },
       h("input", { type: "checkbox", checked: it.available, "aria-label": "Disponible: " + (it.name_es || it.name_pt),
         onchange: async function (e) {
           await run(sb.from("items").update({ available: e.target.checked }).eq("id", it.id),
-            e.target.checked ? "Disponible" : "Marcado sin stock");
+            e.target.checked ? "Disponible" : "Marcado como no disponible");
           await load();
         } }),
       h("span", { class: "slider" }));
@@ -497,8 +544,8 @@
         h("span", { class: "cell-title" }, name,
           (it.tags || []).map(function (t) { return h("span", { class: "tag tag-" + t, text: (TAGS.find(function (x) { return x.id === t; }) || {}).label || t }); })),
         h("span", { class: "cell-sub d-only", text: desc }),
-        h("span", { class: "cell-sub m-only", text: money(it.price) + (it.available ? "" : " · Sin stock") })),
-      h("span", { class: "cell-status d-only" + (it.available ? " ok" : " no"), text: it.available ? "Disponible" : "Sin stock" }),
+        h("span", { class: "cell-sub m-only", text: money(it.price) + (it.available ? "" : " · No disponible") })),
+      h("span", { class: "cell-status d-only" + (it.available ? " ok" : " no"), text: it.available ? "Disponible" : "No disponible" }),
       h("span", { class: "cell-price d-only", text: money(it.price) }),
       availSwitch(it),
       canMove ? moveBtns(it, siblings, "items") : null,
@@ -526,7 +573,7 @@
     var subs = isSub ? [] : subCats(c.id);
     var meta = [
       c.name_pt && c.name_pt !== c.name_es ? "PT: " + c.name_pt : null,
-      plural(n, "plato", "platos"),
+      plural(n, "item", "items"),
       subs.length ? plural(subs.length, "subcategoría", "subcategorías") : null,
       c.active ? null : "Oculta",
     ].filter(Boolean).join(" · ");
@@ -536,7 +583,7 @@
         h("span", { class: "cell-title", text: catName(c) }),
         h("span", { class: "cell-sub", text: meta })),
       h("button", { class: "link-btn d-only", type: "button",
-        onclick: function () { state.view = "items"; state.filter = c.id; render(); } }, "Ver platos"),
+        onclick: function () { state.view = "items"; state.filter = c.id; render(); } }, "Ver items"),
       moveBtns(c, siblings, "categories"),
       h("button", { class: "icon-btn d-only", type: "button", title: "Editar", "aria-label": "Editar " + catName(c),
         onclick: function () { editCat(c); } }, icon(I.edit)),
@@ -695,7 +742,7 @@
       var subs = subCats(c.id);
       var n = countDeep(c.id);
       var extra = subs.length ? " y sus " + plural(subs.length, "subcategoría", "subcategorías") : "";
-      if (!confirm("¿Eliminar “" + catName(c) + "”" + extra + " con " + plural(n, "plato", "platos") + "? No se puede deshacer.")) return;
+      if (!confirm("¿Eliminar “" + catName(c) + "”" + extra + " con " + plural(n, "item", "items") + "? No se puede deshacer.")) return;
       var paths = items
         .filter(function (i) { return i.photo_path && (i.category_id === c.id || subs.some(function (s) { return s.id === i.category_id; })); })
         .map(function (i) { return i.photo_path; });

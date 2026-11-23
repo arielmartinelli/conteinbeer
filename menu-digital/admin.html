@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=8">
+  <link rel="stylesheet" href="css/admin.css?v=10">
 </head>
 <body class="admin-body">
 
@@ -99,10 +99,12 @@
       </div>
 
       <nav class="side-nav">
-        <button class="nav-item" type="button" data-view="items">
+        <button class="nav-item has-sub" type="button" data-view="items" id="nav-items" aria-expanded="false" aria-controls="side-cats">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16M5 10a7 5 0 0 1 14 0M4 14h16M5 14v1a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-1"/></svg>
           <span>Platos</span><span class="count" id="count-items"></span>
+          <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
+        <div class="side-cats" id="side-cats" hidden></div>
         <button class="nav-item" type="button" data-view="categories">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
           <span>Categorías</span><span class="count" id="count-cats"></span>
@@ -113,18 +115,15 @@
         </button>
       </nav>
 
-      <p class="side-label">Filtrar platos</p>
-      <div class="side-cats" id="side-cats"></div>
-
       <div class="side-foot">
         <a class="nav-item" href="menu.html" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>
           <span>Ver menú</span>
         </a>
-        <div class="me">
-          <span class="me-email" id="me-email"></span>
-          <button class="btn ghost small" type="button" id="logout">Salir</button>
-        </div>
+        <button class="nav-item" type="button" id="logout">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10"/></svg>
+          <span>Salir</span>
+        </button>
       </div>
     </aside>
 
@@ -164,6 +163,6 @@
 
   <script src="data/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="js/admin.js?v=5"></script>
+  <script src="js/admin.js?v=12"></script>
 </body>
 </html>
