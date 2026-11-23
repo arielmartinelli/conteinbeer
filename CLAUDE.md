@@ -16,6 +16,7 @@ La base de marca está en `../CLAUDE.md`. Fotos y logos compartidos en `../asset
   - `admin.html` + `js/admin.js`: panel para los dueños (login Supabase): categorías, subcategorías, platos, precios, fotos, stock y orden.
   - Datos en Supabase (`supabase/schema.sql`, `seed.sql`, pasos en `supabase/PASOS.md`). Solo los usuarios de la tabla `admins` pueden editar (RLS). Fotos en el bucket público `menu-photos`, se achican en el navegador antes de subir.
   - `data/menu.js`: menú local de respaldo, se usa si Supabase no está configurado o falla. `data/config.js`: claves de Supabase, Wi-Fi, link de Maps, dirección.
+  - Vista previa al compartir: `img/og-image.jpg` (1200x630) + etiquetas og:/twitter: en index y menu, con URL absoluta `https://conteinbeer.vercel.app`. Si el dominio final es otro, reemplazarla en ambos HTML.
   - Al cambiar CSS/JS, subir el `?v=` en los HTML para que los celulares no usen la versión vieja en caché.
   - Para probar en local: `py -3 -m http.server 5180` dentro de `menu-digital/`.
 - Hosting / dominio: _[definir]_

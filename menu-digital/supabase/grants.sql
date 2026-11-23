@@ -5,3 +5,5 @@ grant select on public.categories, public.items to anon, authenticated;
 grant insert, update, delete on public.categories, public.items to authenticated;
 grant select on public.admins to authenticated;
 grant execute on function public.is_admin() to anon, authenticated;
+-- TRUNCATE no respeta RLS: se le saca a los usuarios de la página.
+revoke truncate, references, trigger on public.categories, public.items from anon, authenticated;
