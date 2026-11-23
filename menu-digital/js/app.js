@@ -57,9 +57,34 @@
   function saveLang(l) {
     try { localStorage.setItem("cb-lang", l); } catch (e) { /* sin storage */ }
   }
-  var lang = storedLang();
-  if (lang !== "pt" && lang !== "es") {
-    lang = (navigator.language || "pt").toLowerCase().indexOf("es") === 0 ? "es" : "pt";
+  // Idioma del celular: el primero en español o portugués de su lista de idiomas preferidos.
+  function detectLang() {
+    var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+    for (var i = 0; i < list.length; i++) {
+      var l = String(list[i] || "").toLowerCase();
+      if (l.indexOf("es") === 0) return "es";
+      if (l.indexOf("pt") === 0) return "pt";
+    }
+    return "pt"; // el bar está en Brasil
+  }
+  // Prioridad: el link (?lang=) > lo que eligió antes > el idioma del celular.
+  var urlLang = null;
+  try { urlLang = new URLSearchParams(location.search).get("lang"); } catch (e) { /* navegador viejo */ }
+  var lang = urlLang === "pt" || urlLang === "es" ? urlLang : storedLang();
+  if (lang !== "pt" && lang !== "es") lang = detectLang();
+  if (urlLang === lang) saveLang(lang);
+
+  // Los links entre inicio y menú llevan el idioma, así se mantiene aunque el navegador no guarde nada.
+  function carryLang() {
+    document.querySelectorAll('a[href^="menu.html"], a[href^="index.html"], a[href="./"]').forEach(function (a) {
+      var base = a.getAttribute("data-href") || a.getAttribute("href");
+      a.setAttribute("data-href", base);
+      var hash = "";
+      var k = base.indexOf("#");
+      if (k >= 0) { hash = base.slice(k); base = base.slice(0, k); }
+      base = base.split("?")[0];
+      a.setAttribute("href", base + "?lang=" + lang + hash);
+    });
   }
 
   function t(key) { return STRINGS[lang][key] || STRINGS.pt[key] || key; }
@@ -72,6 +97,7 @@
     document.querySelectorAll("[data-lang]").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang));
     });
+    carryLang();
     if (document.getElementById("menu")) renderMenu();
   }
 
