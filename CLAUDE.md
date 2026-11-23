@@ -19,7 +19,8 @@ La base de marca está en `../CLAUDE.md`. Fotos y logos compartidos en `../asset
   - Vista previa al compartir: `img/og-image.jpg` (1200x630) + etiquetas og:/twitter: en index y menu, con URL absoluta `https://conteinbeer.vercel.app`. Si el dominio final es otro, reemplazarla en ambos HTML.
   - Al cambiar CSS/JS, subir el `?v=` en los HTML para que los celulares no usen la versión vieja en caché.
   - Para probar en local: `py -3 -m http.server 5180` dentro de `menu-digital/`.
-- Hosting / dominio: _[definir]_
+- Hosting: Vercel, proyecto `conteinbeer` (cuenta ariel-martinellis-projects), conectado a GitHub `arielmartinelli/conteinbeer`, carpeta raíz `menu-digital`. Cada push a `main` publica solo en https://conteinbeer.vercel.app. `supabase/` no se publica (`.vercelignore`).
+- QR de mesas: `../assets/qr/` (apunta a https://conteinbeer.vercel.app/). Si cambia el dominio, regenerar el QR.
 - Los precios y productos del menú deben salir de un único archivo de datos (ej. JSON) para que sea fácil actualizarlos.
 - Optimizar imágenes antes de usarlas (WebP, tamaños adecuados).
 - SEO local: nombre, dirección y horarios en el HTML, datos estructurados de restaurante (schema.org) y buen título para Google.
