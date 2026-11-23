@@ -6,8 +6,8 @@ window.CONFIG = {
   supabaseAnonKey: "sb_publishable_WsdP0zeoTO_0WrVjMuKm0g_XINRYQvj",
 
   // Valores de respaldo: los reales se editan en el panel (Configuración) y se guardan en Supabase.
-  // Perfil del local en Google Maps (ubicación + reseñas).
-  reviewUrl: "https://maps.app.goo.gl/tyUWvfxvQgaNS8oh8",
+  // Abre directo la ventana para dejar reseña en Google (Place ID del bar).
+  reviewUrl: "https://search.google.com/local/writereview?placeid=ChIJMz6jYEBDJ5URKc-HftirZ0c",
 
   wifi: {
     ssid: "Conteinbeer_Clientes",

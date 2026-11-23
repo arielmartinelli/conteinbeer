@@ -636,7 +636,7 @@
     var form2 = h("form", { class: "form" },
       field("Link de Google (reseñas y ubicación)", h("input", { name: "review_url", type: "url", required: true, value: reviewVal,
         placeholder: "https://maps.app.goo.gl/…", oninput: function (e) { testLink.href = e.target.value || "#"; } }),
-        "En Google Maps: buscá el bar → Compartir → Copiar vínculo."),
+        "Link para reseñas: https://search.google.com/local/writereview?placeid= + el Place ID del bar. También sirve un link de Google Maps."),
       h("p", { class: "settings-note" }, testLink),
       err2,
       h("button", { class: "btn", type: "submit" }, "Guardar link"));

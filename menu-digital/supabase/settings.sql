@@ -25,5 +25,5 @@ grant insert, update on public.settings to authenticated;
 insert into public.settings (key, value) values
   ('wifi_ssid', 'Conteinbeer_Clientes'),
   ('wifi_password', 'cervejagelada'),
-  ('review_url', 'https://maps.app.goo.gl/tyUWvfxvQgaNS8oh8')
+  ('review_url', 'https://search.google.com/local/writereview?placeid=ChIJMz6jYEBDJ5URKc-HftirZ0c')
 on conflict (key) do nothing;
